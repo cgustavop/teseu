@@ -1,0 +1,11 @@
+openai-whisper
+pydub
+rapidfuzz
+click
+Pillow
+librosa
+pyloudnorm
+soundfile
+fastapi
+uvicorn[standard]
+sse-starlette

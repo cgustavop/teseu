@@ -1,0 +1,51 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f0f0f;
+  --surface: #1a1a1a;
+  --border: #2a2a2a;
+  --accent: #e8ff00;
+  --text: #f0f0f0;
+  --muted: #666;
+  --error: #ff4d4d;
+  --radius: 6px;
+  --font: "Inter", system-ui, sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: opacity 0.1s;
+}
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+button:not(:disabled):hover { opacity: 0.85; }
+
+aside * { min-width: 0; }
+
+input, textarea {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 8px 12px;
+  font-size: 14px;
+  width: 100%;
+  outline: none;
+}
+input:focus, textarea:focus { border-color: var(--accent); }
+
+.btn-primary { background: var(--accent); color: #000; }
+.btn-ghost   { background: transparent; border: 1px solid var(--border); color: var(--text); }

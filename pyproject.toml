@@ -1,0 +1,25 @@
+[project]
+name = "teseu"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "openai-whisper",
+    "pydub",
+    "rapidfuzz",
+    "click",
+    "Pillow",
+    "librosa",
+    "pyloudnorm",
+    "soundfile",
+]
+
+[project.scripts]
+teseu = "teseu.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["teseu*"]
