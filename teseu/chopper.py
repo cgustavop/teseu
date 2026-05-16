@@ -292,6 +292,18 @@ def make_subtitle_clip(word: str, audio: AudioSegment, out_path: Path) -> None:
         Path(tmp_png.name).unlink(missing_ok=True)
 
 
+def extract_thumbnail(source_path: str, time_sec: float, out_path: Path) -> None:
+    subprocess.run([
+        'ffmpeg', '-y',
+        '-ss', str(max(0.0, time_sec)),
+        '-i', source_path,
+        '-vframes', '1',
+        '-q:v', '3',
+        '-vf', 'scale=320:-1',
+        str(out_path),
+    ], check=True, capture_output=True)
+
+
 def concat_video_clips(clip_paths: list[Path], out_path: Path) -> None:
     tmp_list = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)
     for p in clip_paths:

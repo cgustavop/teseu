@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
 from .db import get_conn, init_db
+from .chopper import slice_chop
 from .generator import generate, ChopResult
 from .indexer import find_media, index_file
 from .jobs import JobStatus, create_job, get_job, executor
@@ -194,6 +195,8 @@ async def run_generate(req: GenerateRequest):
                 "is_tts": c.is_tts,
                 "output_file": c.output_file,
                 "url": f"/files/{c.output_file}" if c.output_file else None,
+                "thumbnail_url": f"/files/{c.thumbnail_file}" if c.thumbnail_file else None,
+                "margin_ms": 200,
             }
             for c in result.chops
         ],
@@ -234,9 +237,102 @@ async def candidates(word: str, threshold: int = 80, limit: int = 10):
                 "start_sec": r["start_sec"],
                 "end_sec": r["end_sec"],
                 "source": Path(r["path"]).name,
+                "source_path": r["path"],
             })
 
     return {"word": word, "matches": matches}
+
+
+# ── stats ─────────────────────────────────────────────────────────────────────
+
+class RegenerateChopRequest(BaseModel):
+    output_file: str
+    source_path: str
+    start_sec: float
+    end_sec: float
+    offset_ms: float
+    sample_rate: int = 44100
+    normalize_lufs: float = -16.0
+    fade_in_ms: int = 5
+    fade_out_ms: int = 15
+    onset_search_ms: int = 100
+    onset_threshold_db: float = -35.0
+    use_onset: bool = False
+    tail_buffer_ms: int = 30
+
+
+@app.post("/regenerate_chop")
+async def run_regenerate_chop(req: RegenerateChopRequest):
+    out_path = OUTPUT_DIR / req.output_file
+    if not out_path.exists():
+        raise HTTPException(404, f"File not found: {req.output_file}")
+
+    new_start = max(0.0, req.start_sec + req.offset_ms / 1000)
+    new_end = max(new_start + 0.05, req.end_sec + req.offset_ms / 1000)
+
+    loop = asyncio.get_event_loop()
+
+    def _regen():
+        chunk = slice_chop(
+            req.source_path, new_start, new_end, req.sample_rate,
+            normalize_lufs=req.normalize_lufs if req.normalize_lufs != 0 else None,
+            fade_in_ms=req.fade_in_ms,
+            fade_out_ms=req.fade_out_ms,
+            onset_search_ms=req.onset_search_ms,
+            onset_threshold_db=req.onset_threshold_db,
+            use_onset=req.use_onset,
+            tail_buffer_ms=req.tail_buffer_ms,
+        )
+        chunk.export(str(out_path), format='wav')
+
+    await loop.run_in_executor(None, _regen)
+    return {"url": f"/files/{req.output_file}", "start_sec": new_start, "end_sec": new_end}
+
+
+# ── join chops ────────────────────────────────────────────────────────────────
+
+class JoinRequest(BaseModel):
+    files: list[str]
+    gap_ms: int = 0
+    output_file: str
+
+
+@app.post("/join_chops")
+async def join_chops_api(req: JoinRequest):
+    from pydub import AudioSegment as _AS
+
+    loop = asyncio.get_event_loop()
+
+    def _join():
+        chunks = []
+        for fname in req.files:
+            p = OUTPUT_DIR / fname
+            if p.exists():
+                chunks.append(_AS.from_file(str(p)))
+        if not chunks:
+            raise ValueError("No valid chop files found")
+        gap = _AS.silent(duration=req.gap_ms) if req.gap_ms > 0 else _AS.empty()
+        result = chunks[0]
+        for c in chunks[1:]:
+            result = result + gap + c
+        result.export(str(OUTPUT_DIR / req.output_file), format="wav")
+
+    await loop.run_in_executor(None, _join)
+    return {"url": f"/files/{req.output_file}"}
+
+
+# ── output dir ───────────────────────────────────────────────────────────────
+
+@app.post("/open_output_dir")
+async def open_output_dir():
+    import platform, subprocess as sp
+    if platform.system() == "Darwin":
+        sp.Popen(["open", str(OUTPUT_DIR)])
+    elif platform.system() == "Windows":
+        sp.Popen(["explorer", str(OUTPUT_DIR)])
+    else:
+        sp.Popen(["xdg-open", str(OUTPUT_DIR)])
+    return {"path": str(OUTPUT_DIR)}
 
 
 # ── stats ─────────────────────────────────────────────────────────────────────

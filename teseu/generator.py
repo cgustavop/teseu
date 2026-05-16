@@ -9,6 +9,7 @@ from .chopper import (
     VIDEO_EXTS,
     apply_lufs,
     concat_video_clips,
+    extract_thumbnail,
     join_chops,
     make_subtitle_clip,
     slice_chop,
@@ -29,6 +30,7 @@ class ChopResult:
     end_sec: Optional[float]
     is_tts: bool
     output_file: Optional[str]  # filename only, relative to output_dir
+    thumbnail_file: Optional[str] = None  # filename only, relative to output_dir
 
 
 @dataclass
@@ -146,6 +148,14 @@ def generate(
             else:
                 make_subtitle_clip(word, chunk, tmp_clip)
             video_clips.append(tmp_clip)
+
+        if is_video_src and src:
+            thumb_path = output_dir / f"{stem}_thumb.jpg"
+            try:
+                extract_thumbnail(src, t0, thumb_path)
+                cr.thumbnail_file = thumb_path.name
+            except Exception:
+                pass
 
         chop_results.append(cr)
 
