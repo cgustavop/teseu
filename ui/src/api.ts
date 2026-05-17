@@ -110,6 +110,23 @@ export async function copyToClipboard(files: string[]): Promise<void> {
   });
 }
 
+export async function getOutputDir(): Promise<string> {
+  const r = await fetch(`${API}/output_dir`);
+  const data = await r.json();
+  return data.path ?? "";
+}
+
+export async function setOutputDir(): Promise<string | null> {
+  try {
+    const r = await fetch(`${API}/set_output_dir`, { method: "POST" });
+    if (!r.ok) return null;
+    const data = await r.json();
+    return data.path ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function exportSession(files: string[]): Promise<string | null> {
   try {
     const r = await fetch(`${API}/export_session`, {

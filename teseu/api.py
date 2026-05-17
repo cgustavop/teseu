@@ -23,15 +23,21 @@ _output_dir: Path = Path.home() / "teseu_out"
 
 
 def _pick_folder_dialog(title: str = "Select folder") -> str:
-    """Cross-platform folder picker using tkinter."""
-    import tkinter as tk
-    from tkinter import filedialog
-    root = tk.Tk()
-    root.withdraw()
-    root.wm_attributes("-topmost", True)
-    path = filedialog.askdirectory(title=title)
-    root.destroy()
-    return path or ""
+    """Cross-platform folder picker."""
+    sys = platform.system()
+    if sys == "Darwin":
+        script = f'tell app "Finder" to POSIX path of (choose folder with prompt "{title}")'
+        result = sp.run(["osascript", "-e", script], capture_output=True, text=True)
+        return result.stdout.strip().rstrip("/") if result.returncode == 0 else ""
+    else:
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        root.wm_attributes("-topmost", True)
+        path = filedialog.askdirectory(title=title)
+        root.destroy()
+        return path or ""
 
 
 def _open_path(path: Path) -> None:
@@ -555,6 +561,25 @@ async def pick_folder():
     if not path:
         raise HTTPException(400, "No folder selected")
     return {"path": path}
+
+
+@app.get("/output_dir")
+async def get_output_dir():
+    return {"path": str(_output_dir)}
+
+
+@app.post("/set_output_dir")
+async def set_output_dir():
+    global _output_dir
+    try:
+        path = await asyncio.to_thread(_pick_folder_dialog, "Choose output folder")
+    except Exception as e:
+        raise HTTPException(500, str(e))
+    if not path:
+        raise HTTPException(400, "No folder selected")
+    _output_dir = Path(path)
+    _output_dir.mkdir(parents=True, exist_ok=True)
+    return {"path": str(_output_dir)}
 
 
 @app.post("/open_output_dir")

@@ -129,6 +129,9 @@ def generate(
         audio_chunks.append(chunk)
 
         if individual:
+            wav_path = output_dir / f"{stem}.wav"
+            chunk.export(str(wav_path), format='wav')
+            cr.output_file = wav_path.name
             if video:
                 clip_path = output_dir / f"{stem}.mp4"
                 if is_video_src:
@@ -136,11 +139,6 @@ def generate(
                 else:
                     make_subtitle_clip(word, chunk, clip_path)
                 video_clips.append(clip_path)
-                cr.output_file = clip_path.name
-            else:
-                wav_path = output_dir / f"{stem}.wav"
-                chunk.export(str(wav_path), format='wav')
-                cr.output_file = wav_path.name
         elif video:
             tmp_clip = output_dir / f".tmp_{stem}.mp4"
             if is_video_src:
@@ -165,10 +163,9 @@ def generate(
     if concat:
         if audio_chunks:
             joined = join_chops(audio_chunks, gap_ms)
-            if not video:
-                p = _unique_path(output_dir / f"{slug}.wav")
-                joined.export(str(p), format='wav')
-                joined_file = p.name
+            p = _unique_path(output_dir / f"{slug}.wav")
+            joined.export(str(p), format='wav')
+            joined_file = p.name
         if video and video_clips:
             p = _unique_path(output_dir / f"{slug}.mp4")
             concat_video_clips(video_clips, p)

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Export, FolderOpen, ArrowsClockwise, X } from "@phosphor-icons/react";
+import { FolderOpen, ArrowsClockwise, X } from "@phosphor-icons/react";
 import { Chop, GenerateOptions, IndexProgress, Stats } from "./types";
-import { API, getRandomWords, copyToClipboard, exportSession } from "./api";
+import { API, getRandomWords, copyToClipboard, exportSession, getOutputDir, setOutputDir } from "./api";
 import { ComposeArea } from "./components/ComposeArea";
 import { OutputSection } from "./components/OutputSection";
 import { PreviewPanel } from "./components/PreviewPanel";
@@ -35,10 +35,11 @@ export default function App() {
   const [joinedUrl, setJoinedUrl] = useState<string | null>(null);
   const [joinedFile, setJoinedFile] = useState<string | null>(null);
   const [isVideo, setIsVideo] = useState(false);
+  const [outputDir, setOutputDirState] = useState("");
 
   const hasResult = chops.length > 0;
 
-  useEffect(() => { fetchStats(); }, []);
+  useEffect(() => { fetchStats(); getOutputDir().then(setOutputDirState); }, []);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -129,6 +130,11 @@ export default function App() {
 
   async function openOutputDir() {
     await fetch(`${API}/open_output_dir`, { method: "POST" });
+  }
+
+  async function changeOutputDir() {
+    const path = await setOutputDir();
+    if (path) setOutputDirState(path);
   }
 
   function applyResult(data: any, append: boolean) {
@@ -351,16 +357,6 @@ export default function App() {
             </button>
           )}
 
-          <button
-            className="btn-ghost"
-            onClick={openOutputDir}
-            disabled={!hasResult}
-            style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, padding: "5px 12px" }}
-          >
-            <Export size={13} />
-            Output folder
-          </button>
-
           {indexProgress?.type === "progress" && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: 4 }}>
               <div style={{ width: 80, height: 2, background: "var(--border)", borderRadius: 2 }}>
@@ -388,6 +384,60 @@ export default function App() {
         <div style={{ padding: "20px 20px 16px", flexShrink: 0 }}>
           <div style={{ ...sidebarLabel, marginBottom: 10 }}>Preview</div>
           <PreviewPanel url={joinedUrl} isVideo={isVideo} />
+        </div>
+
+        {/* destination */}
+        <div style={{
+          borderTop: "1px solid var(--border)",
+          padding: "12px 20px",
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+        }}>
+          <span style={{ ...sidebarLabel, marginBottom: 0 }}>Destination</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button
+              onClick={changeOutputDir}
+              style={{
+                background: "transparent",
+                border: "none",
+                padding: 0,
+                fontSize: 11,
+                color: "var(--muted)",
+                cursor: "pointer",
+                maxWidth: 160,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                textAlign: "right",
+                height: "auto",
+              }}
+              title={outputDir}
+            >
+              {outputDir
+                ? outputDir.split(/[\\/]/).filter(Boolean).slice(-3).join(" / ")
+                : "teseu_out"}
+            </button>
+            <button
+              onClick={openOutputDir}
+              style={{
+                background: "transparent",
+                border: "none",
+                padding: 0,
+                display: "flex",
+                alignItems: "center",
+                color: "var(--muted)",
+                cursor: "pointer",
+                flexShrink: 0,
+                height: "auto",
+              }}
+              title="Open in Finder / Explorer"
+            >
+              <FolderOpen size={14} />
+            </button>
+          </div>
         </div>
 
         {/* settings */}
