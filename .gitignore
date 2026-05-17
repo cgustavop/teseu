@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.venv/
+venv/
+.env
+
+# Output / generated files
+teseu_out/
+teseu.db
+
+# Frontend
+ui/node_modules/
+ui/dist/
+ui/.vite/
+
+# Rust / Tauri build
+ui/src-tauri/target/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp

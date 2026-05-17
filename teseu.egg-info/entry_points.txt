@@ -1,2 +1,0 @@
-[console_scripts]
-teseu = teseu.cli:main

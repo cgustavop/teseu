@@ -200,10 +200,14 @@ def apply_lufs(seg: AudioSegment, target_lufs: float) -> AudioSegment:
 
 
 def tts_placeholder(word: str, sample_rate: int) -> AudioSegment:
-    tmp = tempfile.NamedTemporaryFile(suffix='.aiff', delete=False)
+    import pyttsx3
+    tmp = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
     tmp.close()
     try:
-        subprocess.run(['say', '-o', tmp.name, word], check=True, capture_output=True)
+        engine = pyttsx3.init()
+        engine.save_to_file(word, tmp.name)
+        engine.runAndWait()
+        engine.stop()
         audio = AudioSegment.from_file(tmp.name).set_frame_rate(sample_rate)
     finally:
         Path(tmp.name).unlink(missing_ok=True)

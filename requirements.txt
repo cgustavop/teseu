@@ -9,3 +9,4 @@ soundfile
 fastapi
 uvicorn[standard]
 sse-starlette
+pyttsx3

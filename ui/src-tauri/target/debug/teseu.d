@@ -1,1 +1,0 @@
-/Users/gustavo/teseu/ui/src-tauri/target/debug/teseu: /Users/gustavo/teseu/ui/src-tauri/build.rs /Users/gustavo/teseu/ui/src-tauri/src/main.rs /Users/gustavo/teseu/ui/src-tauri/target/debug/build/teseu-c1f5bd8f4069446e/out/Info.plist /Users/gustavo/teseu/ui/src-tauri/target/debug/build/teseu-c1f5bd8f4069446e/out/icon.png /Users/gustavo/teseu/ui/src-tauri/tauri.conf.json

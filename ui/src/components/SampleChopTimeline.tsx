@@ -113,11 +113,19 @@ export function SampleChopTimeline({ chops, gapMs, joinedFile, onChopsChange, on
     endSec: number,
     sourcePath: string,
   ) {
-    onChopsChange(chops.map(c =>
+    const newChops = chops.map(c =>
       c.index === chopIndex
         ? { ...c, url, start_sec: startSec, end_sec: endSec, source_path: sourcePath }
         : c
-    ));
+    );
+    onChopsChange(newChops);
+
+    if (joinedFile) {
+      const files = newChops.map(c => c.output_file).filter(Boolean) as string[];
+      joinChops({ files, gap_ms: gapMs, output_file: joinedFile })
+        .then(({ url: newUrl }) => onRebaked(newUrl))
+        .catch(() => {});
+    }
   }
 
   return (

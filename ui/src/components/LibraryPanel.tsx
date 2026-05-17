@@ -1,4 +1,5 @@
 import { IndexProgress, Stats } from "../types";
+import { API } from "../api";
 
 type Props = {
   folder: string;
@@ -10,13 +11,22 @@ type Props = {
 };
 
 export function LibraryPanel({ folder, onFolderChange, onIndex, indexing, progress, stats }: Props) {
+  async function pickFolder() {
+    try {
+      const r = await fetch(`${API}/pick_folder`);
+      if (!r.ok) return;
+      const { path } = await r.json();
+      if (path) onFolderChange(path);
+    } catch {}
+  }
+
   return (
     <>
       <div>
         <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: -1 }}>teseu</h1>
         {stats && (
           <p style={{ color: "var(--muted)", fontSize: 12, marginTop: 4 }}>
-            {stats.files} files · {stats.words.toLocaleString()} words · {stats.vocab.toLocaleString()} vocab
+            {stats.files} files · {stats.vocab.toLocaleString()} different words
           </p>
         )}
       </div>
@@ -25,11 +35,17 @@ export function LibraryPanel({ folder, onFolderChange, onIndex, indexing, progre
         <label style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1 }}>
           Library
         </label>
-        <input
-          placeholder="/path/to/your/media"
-          value={folder}
-          onChange={e => onFolderChange(e.target.value)}
-        />
+
+        <button className="btn-ghost" onClick={pickFolder} style={{ textAlign: "left" }}>
+          {folder ? "📁 " + folder.split(/[\\/]/).pop() : "Select folder…"}
+        </button>
+
+        {folder && (
+          <div style={{ fontSize: 11, color: "var(--muted)", wordBreak: "break-all" }}>
+            {folder}
+          </div>
+        )}
+
         <button className="btn-primary" onClick={onIndex} disabled={indexing || !folder}>
           {indexing ? "Indexing…" : "Index folder"}
         </button>

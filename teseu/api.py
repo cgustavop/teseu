@@ -272,18 +272,26 @@ async def run_regenerate_chop(req: RegenerateChopRequest):
 
     loop = asyncio.get_event_loop()
 
+    is_video_out = req.output_file.endswith('.mp4')
+
     def _regen():
-        chunk = slice_chop(
-            req.source_path, new_start, new_end, req.sample_rate,
-            normalize_lufs=req.normalize_lufs if req.normalize_lufs != 0 else None,
-            fade_in_ms=req.fade_in_ms,
-            fade_out_ms=req.fade_out_ms,
-            onset_search_ms=req.onset_search_ms,
-            onset_threshold_db=req.onset_threshold_db,
-            use_onset=req.use_onset,
-            tail_buffer_ms=req.tail_buffer_ms,
-        )
-        chunk.export(str(out_path), format='wav')
+        if is_video_out:
+            from .chopper import slice_video_clip, VIDEO_EXTS
+            if Path(req.source_path).suffix.lower() not in VIDEO_EXTS:
+                raise ValueError("Source is not a video file")
+            slice_video_clip(req.source_path, new_start, new_end, out_path)
+        else:
+            chunk = slice_chop(
+                req.source_path, new_start, new_end, req.sample_rate,
+                normalize_lufs=req.normalize_lufs if req.normalize_lufs != 0 else None,
+                fade_in_ms=req.fade_in_ms,
+                fade_out_ms=req.fade_out_ms,
+                onset_search_ms=req.onset_search_ms,
+                onset_threshold_db=req.onset_threshold_db,
+                use_onset=req.use_onset,
+                tail_buffer_ms=req.tail_buffer_ms,
+            )
+            chunk.export(str(out_path), format='wav')
 
     await loop.run_in_executor(None, _regen)
     return {"url": f"/files/{req.output_file}", "start_sec": new_start, "end_sec": new_end}
@@ -303,25 +311,64 @@ async def join_chops_api(req: JoinRequest):
 
     loop = asyncio.get_event_loop()
 
+    is_video_join = req.output_file.endswith('.mp4')
+
     def _join():
-        chunks = []
-        for fname in req.files:
-            p = OUTPUT_DIR / fname
-            if p.exists():
-                chunks.append(_AS.from_file(str(p)))
-        if not chunks:
+        valid = [OUTPUT_DIR / f for f in req.files if (OUTPUT_DIR / f).exists()]
+        if not valid:
             raise ValueError("No valid chop files found")
-        gap = _AS.silent(duration=req.gap_ms) if req.gap_ms > 0 else _AS.empty()
-        result = chunks[0]
-        for c in chunks[1:]:
-            result = result + gap + c
-        result.export(str(OUTPUT_DIR / req.output_file), format="wav")
+        if is_video_join:
+            from .chopper import concat_video_clips
+            concat_video_clips(valid, OUTPUT_DIR / req.output_file)
+        else:
+            chunks = [_AS.from_file(str(p)) for p in valid]
+            gap = _AS.silent(duration=req.gap_ms) if req.gap_ms > 0 else _AS.empty()
+            result = chunks[0]
+            for c in chunks[1:]:
+                result = result + gap + c
+            result.export(str(OUTPUT_DIR / req.output_file), format="wav")
 
     await loop.run_in_executor(None, _join)
     return {"url": f"/files/{req.output_file}"}
 
 
 # ── output dir ───────────────────────────────────────────────────────────────
+
+@app.get("/pick_folder")
+async def pick_folder():
+    import platform, subprocess as sp
+    sys = platform.system()
+    path = ""
+    try:
+        if sys == "Darwin":
+            r = sp.run(
+                ["osascript", "-e", 'POSIX path of (choose folder with prompt "Select media folder")'],
+                capture_output=True, text=True,
+            )
+            path = r.stdout.strip().rstrip("/")
+        elif sys == "Windows":
+            r = sp.run(
+                ["powershell", "-Command",
+                 "[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null;"
+                 "$f = New-Object System.Windows.Forms.FolderBrowserDialog;"
+                 "$f.ShowDialog() | Out-Null; $f.SelectedPath"],
+                capture_output=True, text=True,
+            )
+            path = r.stdout.strip()
+        else:
+            try:
+                r = sp.run(["zenity", "--file-selection", "--directory"], capture_output=True, text=True)
+                path = r.stdout.strip()
+            except FileNotFoundError:
+                r = sp.run(["kdialog", "--getexistingdirectory", "."], capture_output=True, text=True)
+                path = r.stdout.strip()
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+    if not path:
+        raise HTTPException(400, "No folder selected")
+    return {"path": path}
+
 
 @app.post("/open_output_dir")
 async def open_output_dir():
