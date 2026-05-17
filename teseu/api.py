@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import platform
+import subprocess as sp
 from pathlib import Path
 from typing import Optional
 
@@ -18,6 +20,30 @@ from .jobs import JobStatus, create_job, get_job, executor
 from .search import find_chop
 
 _output_dir: Path = Path.home() / "teseu_out"
+
+
+def _pick_folder_dialog(title: str = "Select folder") -> str:
+    """Cross-platform folder picker using tkinter."""
+    import tkinter as tk
+    from tkinter import filedialog
+    root = tk.Tk()
+    root.withdraw()
+    root.wm_attributes("-topmost", True)
+    path = filedialog.askdirectory(title=title)
+    root.destroy()
+    return path or ""
+
+
+def _open_path(path: Path) -> None:
+    """Open a folder in the native file manager, cross-platform."""
+    sys = platform.system()
+    if sys == "Windows":
+        import os
+        os.startfile(str(path))
+    elif sys == "Darwin":
+        sp.Popen(["open", str(path)])
+    else:
+        sp.Popen(["xdg-open", str(path)])
 _output_dir.mkdir(exist_ok=True)
 
 app = FastAPI(title="teseu")
@@ -522,35 +548,10 @@ async def join_chops_api(req: JoinRequest):
 
 @app.get("/pick_folder")
 async def pick_folder():
-    import platform, subprocess as sp
-    sys = platform.system()
-    path = ""
     try:
-        if sys == "Darwin":
-            r = sp.run(
-                ["osascript", "-e", 'POSIX path of (choose folder with prompt "Select media folder")'],
-                capture_output=True, text=True,
-            )
-            path = r.stdout.strip().rstrip("/")
-        elif sys == "Windows":
-            r = sp.run(
-                ["powershell", "-Command",
-                 "[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null;"
-                 "$f = New-Object System.Windows.Forms.FolderBrowserDialog;"
-                 "$f.ShowDialog() | Out-Null; $f.SelectedPath"],
-                capture_output=True, text=True,
-            )
-            path = r.stdout.strip()
-        else:
-            try:
-                r = sp.run(["zenity", "--file-selection", "--directory"], capture_output=True, text=True)
-                path = r.stdout.strip()
-            except FileNotFoundError:
-                r = sp.run(["kdialog", "--getexistingdirectory", "."], capture_output=True, text=True)
-                path = r.stdout.strip()
+        path = await asyncio.to_thread(_pick_folder_dialog, "Select media folder")
     except Exception as e:
         raise HTTPException(500, str(e))
-
     if not path:
         raise HTTPException(400, "No folder selected")
     return {"path": path}
@@ -558,13 +559,8 @@ async def pick_folder():
 
 @app.post("/open_output_dir")
 async def open_output_dir():
-    import platform, subprocess as sp
-    if platform.system() == "Darwin":
-        sp.Popen(["open", str(_output_dir)])
-    elif platform.system() == "Windows":
-        sp.Popen(["explorer", str(_output_dir)])
-    else:
-        sp.Popen(["xdg-open", str(_output_dir)])
+    _output_dir.mkdir(parents=True, exist_ok=True)
+    _open_path(_output_dir)
     return {"path": str(_output_dir)}
 
 
@@ -606,29 +602,9 @@ class ExportRequest(BaseModel):
 @app.post("/export_session")
 async def export_session_endpoint(req: ExportRequest):
     global _output_dir
-    import platform, subprocess as sp, shutil
-    sys = platform.system()
-    path = ""
+    import shutil
     try:
-        if sys == "Darwin":
-            r = sp.run(
-                ["osascript", "-e", 'POSIX path of (choose folder with prompt "Save session to…")'],
-                capture_output=True, text=True,
-            )
-            path = r.stdout.strip().rstrip("/")
-        elif sys == "Windows":
-            r = sp.run(
-                ["powershell", "-Command",
-                 "[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null;"
-                 "$f = New-Object System.Windows.Forms.FolderBrowserDialog;"
-                 "$f.Description = 'Save session to...';"
-                 "$f.ShowDialog() | Out-Null; $f.SelectedPath"],
-                capture_output=True, text=True,
-            )
-            path = r.stdout.strip()
-        else:
-            r = sp.run(["zenity", "--file-selection", "--directory"], capture_output=True, text=True)
-            path = r.stdout.strip()
+        path = await asyncio.to_thread(_pick_folder_dialog, "Save session to…")
     except Exception as e:
         raise HTTPException(500, str(e))
 
