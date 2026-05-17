@@ -174,7 +174,7 @@ export default function App() {
     setGenerating(true);
     setError(null);
     try {
-      await callGenerate(phrase, true);
+      await callGenerate(phrase, false);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -204,7 +204,7 @@ export default function App() {
       if (!words.length) return;
       const p = words.join(" ");
       setPhrase(p);
-      await callGenerate(p, true);
+      await callGenerate(p, false);
     } catch (e: any) {
       setError(e.message);
     } finally {

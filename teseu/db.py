@@ -4,6 +4,29 @@ from pathlib import Path
 DB_PATH = Path.home() / ".teseu" / "index.db"
 
 
+def _recover_orphans(conn: sqlite3.Connection) -> None:
+    """Group files with no folder_id by parent directory and create folder records."""
+    orphans = conn.execute("SELECT path FROM files WHERE folder_id IS NULL").fetchall()
+    if not orphans:
+        return
+    dirs: dict[str, list[str]] = {}
+    for row in orphans:
+        parent = str(Path(row["path"]).parent)
+        dirs.setdefault(parent, []).append(row["path"])
+    for folder_path, paths in dirs.items():
+        conn.execute("INSERT OR IGNORE INTO folders (path) VALUES (?)", (folder_path,))
+        conn.commit()
+        folder_row = conn.execute(
+            "SELECT id FROM folders WHERE path = ?", (folder_path,)
+        ).fetchone()
+        if folder_row:
+            conn.executemany(
+                "UPDATE files SET folder_id = ? WHERE path = ?",
+                [(folder_row["id"], p) for p in paths],
+            )
+    conn.commit()
+
+
 def get_conn() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
@@ -48,3 +71,4 @@ def init_db(conn: sqlite3.Connection) -> None:
         except Exception:
             pass
     conn.commit()
+    _recover_orphans(conn)

@@ -89,13 +89,13 @@ export function LibraryModal({ onClose }: Props) {
     <div
       style={{
         position: "fixed", inset: 0, zIndex: 100,
-        background: "rgba(15,0,20,0.7)",
+        background: "rgba(0,0,0,0.5)",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{
-        background: "#1e0830",
+        background: "var(--card)",
         border: "1px solid var(--border)",
         borderRadius: 16,
         width: 560,
@@ -140,7 +140,7 @@ export function LibraryModal({ onClose }: Props) {
                 alignItems: "center",
                 gap: 14,
                 padding: "14px 24px",
-                borderBottom: "1px solid rgba(174,112,171,0.08)",
+                borderBottom: "1px solid var(--border)",
                 cursor: "pointer",
               }}
             >
@@ -162,7 +162,7 @@ export function LibraryModal({ onClose }: Props) {
                 onClick={e => { e.preventDefault(); handleDelete(folder.id); }}
                 style={{
                   background: "transparent", border: "none", padding: 4,
-                  color: "rgba(174,112,171,0.3)", cursor: "pointer",
+                  color: "var(--muted)", cursor: "pointer",
                   display: "flex", flexShrink: 0,
                 }}
                 title="Remove folder"
