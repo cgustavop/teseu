@@ -40,7 +40,8 @@ button {
   cursor: pointer;
   border: none;
   border-radius: 20px;
-  padding: 8px 18px;
+  height: 42px;
+  padding: 0 8px;
   font-size: 13px;
   font-family: var(--font);
   font-weight: 600;
@@ -120,4 +121,31 @@ input[type="checkbox"]:checked::after {
   border-top: none;
   border-left: none;
   transform: rotate(45deg);
+}
+
+/* Compose area animated gradient */
+@keyframes compose-gradient {
+  0% {
+    background-position: 100% 50%;
+    animation-timing-function: ease-out;
+  }
+  /* 2200ms / (2200 + 2100) total = 51.16% */
+  51.16% {
+    background-position: 0% 50%;
+    animation-timing-function: ease-out;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.compose-animated-bg {
+  background: linear-gradient(
+    90deg,
+    #260025 0%,
+    rgba(80, 6, 78, 0.5) 50%,
+    #260025 100%
+  );
+  background-size: 250% 100%;
+  animation: compose-gradient 8000ms infinite;
 }

@@ -134,9 +134,8 @@ export function ComposeArea({
       </div>
 
       {/* textarea */}
-      <div style={{
+      <div className="compose-animated-bg" style={{
         position: "relative",
-        background: "var(--surface)",
         borderRadius: "var(--radius)",
         overflow: "hidden",
       }}>
