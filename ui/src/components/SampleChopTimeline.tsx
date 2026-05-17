@@ -13,6 +13,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import type WaveSurfer from "wavesurfer.js";
+import { Play, Stop } from "@phosphor-icons/react";
 import { Chop } from "../types";
 import { joinChops } from "../api";
 import { SampleChopCard } from "./SampleChopCard";
@@ -119,46 +120,72 @@ export function SampleChopTimeline({ chops, gapMs, joinedFile, onChopsChange, on
         : c
     );
     onChopsChange(newChops);
+    setDirty(true);
 
     if (joinedFile) {
       const files = newChops.map(c => c.output_file).filter(Boolean) as string[];
       joinChops({ files, gap_ms: gapMs, output_file: joinedFile })
-        .then(({ url: newUrl }) => onRebaked(newUrl))
+        .then(({ url: newUrl }) => { onRebaked(newUrl); setDirty(false); })
         .catch(() => {});
     }
   }
 
+  if (!chops.length) return null;
+
   return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <button
-          className="btn-primary"
-          style={{ minWidth: 72 }}
           onClick={isGlobalPlaying ? stopAll : playAll}
+          style={{
+            background: isGlobalPlaying ? "rgba(231,11,221,0.15)" : "var(--accent-gradient)",
+            border: isGlobalPlaying ? "1px solid rgba(231,11,221,0.3)" : "none",
+            borderRadius: 20,
+            padding: "5px 14px",
+            color: "white",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
+            fontSize: 12,
+            fontWeight: 600,
+            userSelect: "none",
+          }}
         >
-          {isGlobalPlaying ? "⏹ Stop" : "▶ Play All"}
+          {isGlobalPlaying
+            ? <><Stop size={11} weight="fill" /> Stop</>
+            : <><Play size={11} weight="fill" /> Play all</>
+          }
         </button>
 
-        {joinedFile && (
+        {joinedFile && dirty && (
           <button
-            className="btn-ghost"
-            style={{ fontSize: 12, opacity: dirty ? 1 : 0.5 }}
             onClick={rebake}
-            disabled={rebaking || !dirty}
+            disabled={rebaking}
+            style={{
+              background: "transparent",
+              border: "1px solid rgba(174,112,171,0.25)",
+              borderRadius: 20,
+              padding: "5px 12px",
+              color: "var(--muted)",
+              cursor: rebaking ? "not-allowed" : "pointer",
+              fontSize: 11,
+              userSelect: "none",
+            }}
           >
-            {rebaking ? "Re-baking…" : "⟳ Re-bake joined"}
+            {rebaking ? "Re-baking…" : "Re-bake"}
           </button>
         )}
 
-        <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: "auto" }}>
-          {chops.length} chops · drag to reorder · shift+drag to adjust
+        <span style={{ fontSize: 10, color: "rgba(174,112,171,0.4)", marginLeft: "auto", userSelect: "none" }}>
+          {chops.length} chops
         </span>
       </div>
 
-      <div style={{ overflowX: "auto", paddingBottom: 8 }}>
+      <div style={{ overflowX: "auto", paddingBottom: 4 }}>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={chops.map(c => c.index)} strategy={horizontalListSortingStrategy}>
-            <div style={{ display: "flex", gap: 10, minWidth: "max-content" }}>
+            <div style={{ display: "flex", gap: 8, minWidth: "max-content" }}>
               {chops.map(chop => (
                 <SampleChopCard
                   key={chop.index}

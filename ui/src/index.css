@@ -1,16 +1,26 @@
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+html, body { height: 100%; overflow: hidden; }
+
 :root {
-  --bg: #0a0618;
-  --surface: #110c28;
-  --border: #2e1860;
-  --accent: #b060f0;
-  --accent-text: #fff;
-  --text: #e8e0ff;
-  --muted: #6040a0;
-  --error: #ff5577;
-  --radius: 6px;
+  --bg: #260025;
+  --surface: #2A0028;
+  --card: #351033;
+  --purple-300: #AE70AB;
+  --purple-200: #FFCCFD;
+  --text: #FFFFFF;
+  --accent: #E70BDD;
+  --accent-gradient: linear-gradient(137.46deg, #E70BDD -15.43%, #2A0028 130.85%);
+  --muted: #AE70AB;
+  --border: rgba(174, 112, 171, 0.2);
+  --radius: 12px;
   --font: "Inter", system-ui, sans-serif;
+  --error: #ff5577;
 }
 
 body {
@@ -19,22 +29,25 @@ body {
   font-family: var(--font);
   font-size: 14px;
   line-height: 1.5;
-  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* No selection on UI chrome */
+*, *::before, *::after { -webkit-user-select: none; user-select: none; }
+input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
 
 button {
   cursor: pointer;
   border: none;
-  border-radius: var(--radius);
-  padding: 8px 16px;
+  border-radius: 20px;
+  padding: 8px 18px;
   font-size: 13px;
+  font-family: var(--font);
   font-weight: 600;
-  transition: opacity 0.1s;
+  transition: opacity 0.12s;
 }
-button:disabled { opacity: 0.4; cursor: not-allowed; }
+button:disabled { opacity: 0.35; cursor: not-allowed; }
 button:not(:disabled):hover { opacity: 0.85; }
-
-aside * { min-width: 0; }
 
 input:not([type="checkbox"]):not([type="range"]), textarea {
   background: var(--surface);
@@ -43,49 +56,42 @@ input:not([type="checkbox"]):not([type="range"]), textarea {
   color: var(--text);
   padding: 8px 12px;
   font-size: 14px;
+  font-family: var(--font);
   width: 100%;
   outline: none;
 }
-input:not([type="checkbox"]):not([type="range"]):focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px #b060f018; }
+input:not([type="checkbox"]):not([type="range"]):focus,
+textarea:focus { border-color: rgba(231, 11, 221, 0.5); }
 
-.btn-primary { background: var(--accent); color: var(--accent-text); }
-.btn-ghost   { background: transparent; border: 1px solid var(--border); color: var(--text); }
-.btn-ghost:not(:disabled):hover { background: #2e186018; }
-
-/* ── range slider ── */
-input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--border);
-  outline: none;
+.btn-primary {
+  background: var(--accent-gradient);
+  color: #fff;
   border: none;
-  padding: 0;
-  cursor: pointer;
 }
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--accent);
-  cursor: pointer;
-  box-shadow: 0 0 0 3px #b060f022;
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 20px;
 }
-input[type="range"]::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  border: none;
-  border-radius: 50%;
-  background: var(--accent);
-  cursor: pointer;
-}
-input[type="range"]:focus::-webkit-slider-thumb {
-  box-shadow: 0 0 0 4px #b060f040;
+.btn-ghost:not(:disabled):hover { background: rgba(174, 112, 171, 0.1); }
+
+/* Section labels */
+.section-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  user-select: none;
 }
 
-/* ── checkbox ── */
+/* Scrollbars */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Checkbox */
 input[type="checkbox"] {
   -webkit-appearance: none;
   appearance: none;
@@ -114,8 +120,4 @@ input[type="checkbox"]:checked::after {
   border-top: none;
   border-left: none;
   transform: rotate(45deg);
-}
-input[type="checkbox"]:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }

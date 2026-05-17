@@ -5,9 +5,11 @@ export type Chop = {
   is_tts: boolean;
   url: string | null;
   output_file: string | null;
+  output_path: string | null;
   source_path: string | null;
   start_sec: number | null;
   end_sec: number | null;
+  thumbnail_file: string | null;
   thumbnail_url: string | null;
   margin_ms: number;
 };
@@ -32,6 +34,14 @@ export type IndexProgress = {
 };
 
 export type Stats = { files: number; words: number; vocab: number };
+
+export type Folder = {
+  id: number;
+  path: string;
+  enabled: boolean;
+  file_count: number;
+  word_count: number;
+};
 
 export type GenerateOptions = {
   gapMs: number;

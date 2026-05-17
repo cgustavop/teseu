@@ -1,3 +1,4 @@
+import { FolderOpen } from "@phosphor-icons/react";
 import { IndexProgress, Stats } from "../types";
 import { API } from "../api";
 
@@ -21,60 +22,57 @@ export function LibraryPanel({ folder, onFolderChange, onIndex, indexing, progre
   }
 
   return (
-    <>
-      <div>
-        <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: -1 }}>teseu</h1>
-        {stats && (
-          <p style={{ color: "var(--muted)", fontSize: 12, marginTop: 4 }}>
-            {stats.files} files · {stats.vocab.toLocaleString()} different words
-          </p>
-        )}
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <button
+        className="btn-ghost"
+        onClick={pickFolder}
+        style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "flex-start" }}
+      >
+        <FolderOpen size={14} />
+        {folder ? folder.split(/[\\/]/).pop() : "Import folder…"}
+      </button>
 
-      <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <label style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1 }}>
-          Library
-        </label>
-
-        <button className="btn-ghost" onClick={pickFolder} style={{ textAlign: "left" }}>
-          {folder ? "📁 " + folder.split(/[\\/]/).pop() : "Select folder…"}
+      {folder && (
+        <button
+          className="btn-primary"
+          onClick={onIndex}
+          disabled={indexing || !folder}
+          style={{ fontSize: 12 }}
+        >
+          {indexing ? "Indexing…" : "Index"}
         </button>
+      )}
 
-        {folder && (
-          <div style={{ fontSize: 11, color: "var(--muted)", wordBreak: "break-all" }}>
-            {folder}
-          </div>
-        )}
+      {progress && (
+        <div style={{ fontSize: 11 }}>
+          {progress.type === "progress" && (
+            <>
+              <div style={{ color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {progress.done}/{progress.total}
+              </div>
+              <div style={{ height: 2, background: "var(--border)", borderRadius: 2, marginTop: 4 }}>
+                <div style={{
+                  height: "100%", background: "var(--accent)", borderRadius: 2,
+                  width: `${((progress.done ?? 0) / (progress.total ?? 1)) * 100}%`,
+                  transition: "width 0.2s",
+                }} />
+              </div>
+            </>
+          )}
+          {progress.type === "done" && (
+            <span style={{ color: "var(--accent)" }}>Indexed · {progress.errors} errors</span>
+          )}
+          {progress.type === "error" && (
+            <span style={{ color: "var(--error)" }}>{progress.error}</span>
+          )}
+        </div>
+      )}
 
-        <button className="btn-primary" onClick={onIndex} disabled={indexing || !folder}>
-          {indexing ? "Indexing…" : "Index folder"}
-        </button>
-
-        {progress && (
-          <div style={{ fontSize: 12 }}>
-            {progress.type === "progress" && (
-              <>
-                <div style={{ color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {progress.done}/{progress.total} — {progress.file}
-                </div>
-                <div style={{ height: 3, background: "var(--border)", borderRadius: 2, marginTop: 6 }}>
-                  <div style={{
-                    height: "100%", background: "var(--accent)", borderRadius: 2,
-                    width: `${((progress.done ?? 0) / (progress.total ?? 1)) * 100}%`,
-                    transition: "width 0.2s",
-                  }} />
-                </div>
-              </>
-            )}
-            {progress.type === "done" && (
-              <span style={{ color: "var(--accent)" }}>Done · {progress.errors} errors</span>
-            )}
-            {progress.type === "error" && (
-              <span style={{ color: "var(--error)" }}>{progress.error}</span>
-            )}
-          </div>
-        )}
-      </section>
-    </>
+      {stats && (
+        <div style={{ fontSize: 10, color: "rgba(174,112,171,0.4)" }}>
+          {stats.files} files · {stats.vocab.toLocaleString()} words
+        </div>
+      )}
+    </div>
   );
 }

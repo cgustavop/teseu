@@ -15,11 +15,17 @@ def get_conn() -> sqlite3.Connection:
 
 def init_db(conn: sqlite3.Connection) -> None:
     conn.executescript("""
+        CREATE TABLE IF NOT EXISTS folders (
+            id       INTEGER PRIMARY KEY,
+            path     TEXT UNIQUE NOT NULL,
+            enabled  INTEGER NOT NULL DEFAULT 1,
+            added_at TEXT DEFAULT (datetime('now'))
+        );
         CREATE TABLE IF NOT EXISTS files (
-            id          INTEGER PRIMARY KEY,
-            path        TEXT UNIQUE NOT NULL,
+            id           INTEGER PRIMARY KEY,
+            path         TEXT UNIQUE NOT NULL,
             duration_sec REAL,
-            indexed_at  TEXT DEFAULT (datetime('now'))
+            indexed_at   TEXT DEFAULT (datetime('now'))
         );
         CREATE TABLE IF NOT EXISTS words (
             id              INTEGER PRIMARY KEY,
@@ -33,4 +39,12 @@ def init_db(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_words_normalized ON words(word_normalized);
         CREATE INDEX IF NOT EXISTS idx_words_file       ON words(file_id);
     """)
+    # migrations — silent if column already exists
+    for stmt in [
+        "ALTER TABLE files ADD COLUMN folder_id INTEGER REFERENCES folders(id) ON DELETE SET NULL",
+    ]:
+        try:
+            conn.execute(stmt)
+        except Exception:
+            pass
     conn.commit()

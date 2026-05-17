@@ -56,3 +56,71 @@ export async function joinChops(payload: {
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
+
+export async function checkWords(words: string[]): Promise<Record<string, boolean>> {
+  if (!words.length) return {};
+  const r = await fetch(`${API}/check_words`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(words),
+  });
+  return r.json();
+}
+
+export async function getSuggestions(partial: string, limit = 5): Promise<string[]> {
+  if (partial.length < 2) return [];
+  const r = await fetch(`${API}/suggest/${encodeURIComponent(partial)}?limit=${limit}`);
+  const data = await r.json();
+  return data.words ?? [];
+}
+
+export async function getFolders() {
+  const r = await fetch(`${API}/folders`);
+  return r.json();
+}
+
+export async function setFolderEnabled(id: number, enabled: boolean) {
+  await fetch(`${API}/folders/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ enabled }),
+  });
+}
+
+export async function deleteFolder(id: number) {
+  await fetch(`${API}/folders/${id}`, { method: "DELETE" });
+}
+
+export async function updateFolders(): Promise<{ job_id: string; new_files: number }> {
+  const r = await fetch(`${API}/folders/update`, { method: "POST" });
+  return r.json();
+}
+
+export async function getRandomWords(count = 6): Promise<string[]> {
+  const r = await fetch(`${API}/random_words?count=${count}`);
+  const data = await r.json();
+  return data.words ?? [];
+}
+
+export async function copyToClipboard(files: string[]): Promise<void> {
+  await fetch(`${API}/copy_to_clipboard`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ files }),
+  });
+}
+
+export async function exportSession(files: string[]): Promise<string | null> {
+  try {
+    const r = await fetch(`${API}/export_session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ files }),
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    return data.path ?? null;
+  } catch {
+    return null;
+  }
+}

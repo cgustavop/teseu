@@ -32,7 +32,7 @@ def _extract_audio(video_path: Path) -> Path:
     return Path(tmp.name)
 
 
-def index_file(path: Path, model, conn, language: str = None, min_confidence: float = 0.75) -> bool:
+def index_file(path: Path, model, conn, language: str = None, min_confidence: float = 0.75, folder_id: int = None) -> bool:
     cur = conn.execute("SELECT id FROM files WHERE path = ?", (str(path.resolve()),))
     if cur.fetchone():
         return False
@@ -49,8 +49,8 @@ def index_file(path: Path, model, conn, language: str = None, min_confidence: fl
         duration = result.get('duration')
 
         conn.execute(
-            "INSERT INTO files (path, duration_sec) VALUES (?, ?)",
-            (str(path.resolve()), duration)
+            "INSERT INTO files (path, duration_sec, folder_id) VALUES (?, ?, ?)",
+            (str(path.resolve()), duration, folder_id)
         )
         file_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 

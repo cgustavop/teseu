@@ -1,23 +1,21 @@
 import { useRef } from "react";
 import { useWavesurfer } from "@wavesurfer/react";
-import { downloadFile } from "../api";
+import { Play, Pause } from "@phosphor-icons/react";
 
 type Props = {
   url: string;
   filename?: string;
-  onClear?: () => void;
 };
 
-export function WavePlayer({ url, filename, onClear }: Props) {
+export function WavePlayer({ url }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-
   const { wavesurfer, isPlaying } = useWavesurfer({
     container: containerRef,
     url,
-    waveColor: "#2e1860",
-    progressColor: "#b060f0",
-    cursorColor: "#c080ff",
-    height: 80,
+    waveColor: "#3a1060",
+    progressColor: "#E70BDD",
+    cursorColor: "#E70BDD",
+    height: 72,
     barWidth: 2,
     barGap: 1,
     normalize: true,
@@ -25,30 +23,14 @@ export function WavePlayer({ url, filename, onClear }: Props) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div ref={containerRef} />
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <button
-          className="btn-primary"
-          style={{ minWidth: 56 }}
-          onClick={() => wavesurfer?.playPause()}
-        >
-          {isPlaying ? "⏸" : "▶"}
-        </button>
-        {onClear && (
-          <button className="btn-ghost" onClick={onClear}>
-            ← Clear
-          </button>
-        )}
-        {filename && (
-          <button
-            className="btn-ghost"
-            style={{ fontSize: 12, color: "var(--muted)", marginLeft: "auto" }}
-            onClick={() => downloadFile(url.replace("http://localhost:7731", ""), filename)}
-          >
-            ↓ {filename}
-          </button>
-        )}
-      </div>
+      <div ref={containerRef} style={{ cursor: "pointer" }} onClick={() => wavesurfer?.playPause()} />
+      <button
+        className="btn-primary"
+        style={{ width: 56, padding: "6px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+        onClick={() => wavesurfer?.playPause()}
+      >
+        {isPlaying ? <Pause size={14} weight="fill" /> : <Play size={14} weight="fill" />}
+      </button>
     </div>
   );
 }

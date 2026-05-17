@@ -3,6 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useWavesurfer } from "@wavesurfer/react";
 import type WaveSurfer from "wavesurfer.js";
+import { ArrowsClockwise, Export } from "@phosphor-icons/react";
 import { Chop } from "../types";
 import { API, Candidate, getCandidates, regenerateChop } from "../api";
 
@@ -21,23 +22,19 @@ type Props = {
 };
 
 export function SampleChopCard({
-  chop,
-  isActive,
-  onWsReady,
-  onPlayFinished,
-  onChopUpdated,
+  chop, isActive, onWsReady, onPlayFinished, onChopUpdated,
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: chop.index });
 
   const waveContainerRef = useRef<HTMLDivElement>(null);
-  const { wavesurfer, isReady } = useWavesurfer({
+  const { wavesurfer } = useWavesurfer({
     container: waveContainerRef,
     url: chop.url ? `${API}${chop.url}` : undefined,
-    waveColor: "#4a2880",
-    progressColor: "#b060f0",
-    cursorColor: "#c080ff",
-    height: 48,
+    waveColor: "#FFCCFD",
+    progressColor: "#E70BDD",
+    cursorColor: "#E70BDD",
+    height: 72,
     barWidth: 2,
     barGap: 1,
     barRadius: 2,
@@ -48,11 +45,10 @@ export function SampleChopCard({
   const [dragOffsetMs, setDragOffsetMs] = useState(0);
   const [isAdjusting, setIsAdjusting] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
-
-  // reroll state
   const [showCandidates, setShowCandidates] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loadingCandidates, setLoadingCandidates] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!wavesurfer) return;
@@ -66,8 +62,7 @@ export function SampleChopCard({
     if (showCandidates) { setShowCandidates(false); return; }
     setShowCandidates(true);
     setLoadingCandidates(true);
-    const list = await getCandidates(chop.word);
-    setCandidates(list);
+    setCandidates(await getCandidates(chop.word));
     setLoadingCandidates(false);
   }
 
@@ -84,13 +79,7 @@ export function SampleChopCard({
         end_sec: c.end_sec,
         offset_ms: 0,
       });
-      onChopUpdated(
-        chop.index,
-        result.url + `?t=${Date.now()}`,
-        result.start_sec,
-        result.end_sec,
-        c.source_path,
-      );
+      onChopUpdated(chop.index, result.url + `?t=${Date.now()}`, result.start_sec, result.end_sec, c.source_path);
     } catch {}
     setIsRegenerating(false);
   }
@@ -127,13 +116,7 @@ export function SampleChopCard({
           end_sec: chop.end_sec!,
           offset_ms: finalOffset,
         });
-        onChopUpdated(
-          chop.index,
-          result.url + `?t=${Date.now()}`,
-          result.start_sec,
-          result.end_sec,
-          chop.source_path!,
-        );
+        onChopUpdated(chop.index, result.url + `?t=${Date.now()}`, result.start_sec, result.end_sec, chop.source_path!);
       } catch {}
       setIsRegenerating(false);
     }
@@ -152,14 +135,14 @@ export function SampleChopCard({
         transition,
         opacity: isDragging ? 0.4 : 1,
         flexShrink: 0,
-        width: 158,
-        background: isActive ? "#23104a" : "#160c35",
-        border: `1px solid ${isActive ? "#8040d0" : "#2e1860"}`,
-        borderRadius: 10,
+        width: 170,
+        background: isActive ? "#3a0a38" : "#2A0028",
+        border: `1px solid ${isActive ? "rgba(231,11,221,0.5)" : "rgba(174,112,171,0.15)"}`,
+        borderRadius: 12,
         overflow: "hidden",
         cursor: isDragging ? "grabbing" : "grab",
         userSelect: "none",
-        boxShadow: isActive ? "0 0 0 2px #8040d030" : undefined,
+        boxShadow: isActive ? "0 0 0 2px rgba(231,11,221,0.2)" : undefined,
         position: "relative",
       }}
       {...attributes}
@@ -171,46 +154,44 @@ export function SampleChopCard({
         }
       }}
       onKeyDown={listeners?.onKeyDown as any}
-      onClick={() => { if (!isAdjusting && !showCandidates) wavesurfer?.playPause(); }}
+      onClick={() => {
+        if (!isAdjusting && !showCandidates) wavesurfer?.playPause();
+      }}
     >
       {/* header */}
-      <div style={{ padding: "7px 8px 4px", display: "flex", alignItems: "flex-start", gap: 4 }}>
+      <div style={{ padding: "8px 8px 4px", display: "flex", alignItems: "center", gap: 4 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontSize: 13, fontWeight: 600,
-            color: chop.is_tts ? "#a060a0" : "#e8e0ff",
+            color: chop.is_tts ? "var(--muted)" : "var(--text)",
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
           }}>
             {chop.word}
-            {chop.matched_word && chop.matched_word.trim().toLowerCase() !== chop.word.toLowerCase() && (
-              <span style={{ color: "#7050a0", fontSize: 10, fontWeight: 400, marginLeft: 4 }}>
-                {chop.matched_word.trim()}
-              </span>
-            )}
           </div>
           {isAdjusting && (
-            <div style={{ fontSize: 10, color: "#c080ff", fontVariantNumeric: "tabular-nums" }}>
+            <div style={{ fontSize: 10, color: "#E70BDD", fontVariantNumeric: "tabular-nums" }}>
               {dragOffsetMs > 0 ? "+" : ""}{dragOffsetMs}ms
             </div>
           )}
           {isRegenerating && (
-            <div style={{ fontSize: 10, color: "#8060c0" }}>slicing…</div>
+            <div style={{ fontSize: 10, color: "var(--muted)" }}>slicing…</div>
           )}
         </div>
 
-        {/* reroll button */}
+        {/* reroll */}
         {!chop.is_tts && chop.output_file && (
           <button
             style={{
-              background: showCandidates ? "#3a1870" : "transparent",
-              border: "none", borderRadius: 4, padding: "2px 4px",
-              fontSize: 12, color: "#8060c0", cursor: "pointer",
-              flexShrink: 0, lineHeight: 1,
+              background: showCandidates ? "rgba(231,11,221,0.15)" : "transparent",
+              border: "none", borderRadius: 6, padding: "3px 5px",
+              color: "var(--muted)", cursor: "pointer", flexShrink: 0,
+              display: "flex", alignItems: "center",
             }}
             onClick={openReroll}
-            title="Reroll — pick a different match"
+            onPointerDown={e => e.stopPropagation()}
+            title="Pick a different sample"
           >
-            ⟳
+            <ArrowsClockwise size={13} />
           </button>
         )}
       </div>
@@ -218,63 +199,83 @@ export function SampleChopCard({
       {/* candidate picker */}
       {showCandidates && (
         <div
-          style={{
-            background: "#0e0828", borderTop: "1px solid #2e1860",
-            maxHeight: 180, overflowY: "auto",
-          }}
+          style={{ background: "#0e0620", borderTop: "1px solid rgba(174,112,171,0.15)", maxHeight: 160, overflowY: "auto" }}
           onClick={e => e.stopPropagation()}
+          onPointerDown={e => e.stopPropagation()}
         >
           {loadingCandidates ? (
-            <div style={{ padding: "8px", fontSize: 11, color: "#6040a0" }}>Loading…</div>
+            <div style={{ padding: 8, fontSize: 11, color: "var(--muted)" }}>Loading…</div>
           ) : candidates.length === 0 ? (
-            <div style={{ padding: "8px", fontSize: 11, color: "#6040a0" }}>No matches found</div>
-          ) : (
-            candidates.map((c, i) => (
-              <div
-                key={i}
-                onClick={(e) => pickCandidate(c, e)}
-                style={{
-                  padding: "5px 8px", cursor: "pointer", fontSize: 11,
-                  borderBottom: "1px solid #1a0e40",
-                  display: "flex", flexDirection: "column", gap: 1,
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = "#1e1048")}
-                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-              >
-                <div style={{ color: "#e8e0ff", fontWeight: 500 }}>
-                  {c.word}
-                  <span style={{ color: "#8060c0", marginLeft: 6 }}>{c.score}%</span>
-                </div>
-                <div style={{ color: "#6040a0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {c.source} · {c.start_sec.toFixed(2)}s
-                </div>
+            <div style={{ padding: 8, fontSize: 11, color: "var(--muted)" }}>No matches</div>
+          ) : candidates.map((c, i) => (
+            <div
+              key={i}
+              onClick={e => pickCandidate(c, e)}
+              style={{
+                padding: "5px 8px", cursor: "pointer", fontSize: 11,
+                borderBottom: "1px solid rgba(174,112,171,0.08)",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = "rgba(174,112,171,0.1)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+            >
+              <div style={{ color: "var(--text)", fontWeight: 500 }}>
+                {c.word} <span style={{ color: "var(--muted)" }}>{c.score}%</span>
               </div>
-            ))
-          )}
+              <div style={{ color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {c.source} · {c.start_sec.toFixed(2)}s
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* waveform */}
+      {/* waveform with slide animation */}
       {!showCandidates && (
         <div
-          style={{ padding: "0 6px", cursor: "pointer" }}
+          style={{ overflow: "hidden", cursor: "pointer" }}
           onClick={e => { e.stopPropagation(); wavesurfer?.playPause(); }}
           onPointerDown={e => e.stopPropagation()}
         >
-          {chop.url ? (
-            <div ref={waveContainerRef} />
-          ) : (
-            <div style={{ height: 48, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontSize: 10, color: "#5040a0" }}>TTS</span>
-            </div>
-          )}
+          <div style={{
+            transform: isAdjusting ? `translateX(${dragOffsetMs * 0.2}px)` : "none",
+            transition: isAdjusting ? "none" : "transform 0.15s ease",
+          }}>
+            {chop.url ? (
+              <div ref={waveContainerRef} style={{ padding: "0 0" }} />
+            ) : (
+              <div style={{ height: 72, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 11, color: "var(--muted)" }}>TTS</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* footer hint */}
+      {/* footer */}
       {!showCandidates && (
-        <div style={{ padding: "2px 8px 5px", fontSize: 9, color: "#5040a0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {chop.is_tts ? "text-to-speech" : canAdjust ? "shift+drag to adjust" : (chop.matched_word ?? "")}
+        <div style={{
+          padding: "3px 8px 6px",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+        }}>
+          <span style={{ fontSize: 9, color: "rgba(174,112,171,0.5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+            {chop.is_tts ? "text-to-speech" : canAdjust ? "shift+drag to adjust" : (chop.matched_word ?? "")}
+          </span>
+          {/* Copy path for DAW import */}
+          {chop.output_path && (
+            <div
+              onClick={async (e) => {
+                e.stopPropagation();
+                await navigator.clipboard.writeText(chop.output_path!);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+              }}
+              onPointerDown={e => e.stopPropagation()}
+              style={{ color: copied ? "#E70BDD" : "rgba(174,112,171,0.5)", cursor: "pointer", flexShrink: 0, display: "flex", padding: "0 2px" }}
+              title="Copy file path"
+            >
+              <Export size={11} />
+            </div>
+          )}
         </div>
       )}
 
@@ -282,7 +283,7 @@ export function SampleChopCard({
       {chop.thumbnail_url && !showCandidates && (
         <img
           src={`${API}${chop.thumbnail_url}`}
-          style={{ width: "100%", height: 70, objectFit: "cover", display: "block" }}
+          style={{ width: "100%", height: 65, objectFit: "cover", display: "block" }}
           draggable={false}
         />
       )}
